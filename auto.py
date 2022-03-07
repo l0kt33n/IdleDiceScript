@@ -1,7 +1,6 @@
 import pyautogui as pag
 from time import sleep
 from PIL import ImageGrab
-import PySimpleGUI as sg
 import pickle
 
 
