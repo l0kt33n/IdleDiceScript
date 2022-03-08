@@ -1,7 +1,12 @@
 from PIL import ImageGrab
-from time import sleep
+from time import sleep, time
 import pyautogui as pag
 import pickle
+import argparse
+
+convertTime = None
+fullDeck = False
+screenWidth, screenHeight = pag.size()
 
 
 class UiConfigs():
@@ -30,6 +35,14 @@ class CardsConfigs():
         self.convertConfirmLocation = None
 
 
+class CasinoConfigs():
+    def __init__(self):
+        self.openLocation = (1050, 590)
+        self.casinoTabLocation = (1050, 590)
+        self.investButton = None
+        self.closeLocation = None
+
+
 def buyallAndRoll():
     pag.press('space')
     pag.press('b')
@@ -39,72 +52,106 @@ def prestige():
     pag.press('p')
 
 
-def checkConvert(cards: CardsConfigs):
+def invest():
+    # open casino window
+    # click casino tab
+    # find invest button
+    # click invest button
+    # close casino
+    return
+
+
+def checkConvert():
     if ImageGrab.grab().getpixel((cards.convertLocation)) == (255, 255, 255):
-        convert(cards)
+        # if last convert was less than 5 seconds ago
+        if convertTime is not None and time() - convertTime < 5:
+            print('Full deck. Need to invest.')
+            fullDeck = True
+            # invest()
+        else:
+            convert()
         return True
     else:
         return False
 
 
-def convert(cards: CardsConfigs):
+def convert():
     pag.click(cards.convertLocation)
     sleep(0.5)
     confirm(cards.convertConfirmLocation)
+    convertTime = time()
 
 
 def confirm(confirmLocation):
     pag.click(confirmLocation)
 
 
-def switchMode(options: UiConfigs):
-    if not options.buyMaxMode:
-        options.buyMaxMode = True
-        pag.click(options.buyMaxLocation)
+def switchMode():
+    if not ui.buyMaxMode:
+        ui.buyMaxMode = True
+        pag.click(ui.buyMaxLocation)
     else:
-        options.buyMaxMode = False
-        pag.click(options.buyOneLocation)
+        ui.buyMaxMode = False
+        pag.click(ui.buyOneLocation)
 
 
-def checkFreeStuff(cards: CardsConfigs, freestuff: FreeStuffConfigs):
+def checkFreeStuff():
     pag.click(cards.closeLocation)
     sleep(0.5)
     while ImageGrab.grab().getpixel((freestuff.activationLocation)) == (255, 255, 255):
-        getFreeStuff(freestuff)
+        getFreeStuff()
         sleep(1)
     pag.click(cards.openLocation)
 
 
-def getFreeStuff(freestuff: FreeStuffConfigs):
+def getFreeStuff():
     pag.click(freestuff.activationLocation)
     sleep(0.5)
     confirm(freestuff.startLocation)
     sleep(6)
     confirm(freestuff.endLocation)
 
+def buyLoop():
+    time = 0
+    while True:
+        buyallAndRoll()
+        time += 1
+        sleep(1)
 
-def gameLoop(ui: UiConfigs, cards: CardsConfigs, freestuff: FreeStuffConfigs):
+def prestigeLoop():
+    time = 0
+    while True:
+        if time % freestuff.freeStuffInterVal == 0:
+            checkFreeStuff()
+        if time % 60 == 0:
+            colors = ImageGrab.grab().crop((1567, 955, 1715, 980)).getcolors(maxcolors=512)
+            for count, (r, g, b) in colors:
+                if (r,g,b) == (103,135,58):
+                    print('Prestige is green')   
+                    sleep(ui.prestigeWaitTime)
+                    prestige()
+                    break
+        buyallAndRoll()
+        time += 1
+        sleep(1)
+
+
+def gameLoop():
     pag.click(ui.activateLocation)
     pag.click(cards.openLocation)
     sleep(1)
     time = 0
     prestigeTime = 0
     try:
-        while True:
+        while not fullDeck:
             if time % freestuff.freeStuffInterVal == 0:
-                checkFreeStuff(cards, freestuff)
-            if checkConvert(cards):
-                prestigeTime = 0
-            else:
-                prestigeTime += 1
-                if prestigeTime >= ui.prestigeWaitTime:
-                    prestige()
-                    prestigeTime = 0
-                if prestigeTime % 5 == 0:
-                    switchMode(ui)
+                checkFreeStuff()
+            if time % 5 == 0:
+                switchMode()
             buyallAndRoll()
             time += 1
             sleep(1)
+
     except KeyboardInterrupt:
         print('Program terminated')
         return 0
@@ -113,7 +160,7 @@ def gameLoop(ui: UiConfigs, cards: CardsConfigs, freestuff: FreeStuffConfigs):
 def setupUiConfigs():
     uiConfigs = UiConfigs()
     try:
-        uiConfigs = pickle.load(file=open('uiConfigs.p', 'rb'))
+        uiConfigs = pickle.load(file=open(f'uiConfigs_{screenWidth}x{screenHeight}.p', 'rb'))
 
     except FileNotFoundError:
         input('Move your mouse to the Activate area and press enter')
@@ -123,35 +170,35 @@ def setupUiConfigs():
         input('Move your mouse to the Buy Max button and press enter')
         uiConfigs.buyMaxLocation = getMousePosition()
 
-        pickle.dump(uiConfigs, file=open('uiConfigs.p', 'wb'))
-        
+        pickle.dump(uiConfigs, file=open(f'uiConfigs_{screenWidth}x{screenHeight}.p', 'wb'))
+
     return uiConfigs
 
 
-def setupFreestuffsConfigs():
-    freestuffs = FreeStuffConfigs()
+def setupfreestuffConfigs():
+    freestuff = FreeStuffConfigs()
     try:
-        freestuffs = pickle.load(file=open('freestuffs.p', 'rb'))
-        
+        freestuff = pickle.load(file=open(f'freestuff_{screenWidth}x{screenHeight}.p', 'rb'))
+
     except FileNotFoundError:
         input('Move your mouse to the Freestuff button and press enter')
-        freestuffs.activationLocation = getMousePosition()
+        freestuff.activationLocation = getMousePosition()
         input('Move your mouse to the Start button and press enter')
-        freestuffs.startLocation = getMousePosition()
+        freestuff.startLocation = getMousePosition()
         input('Move your mouse to the End button and press enter')
-        freestuffs.endLocation = getMousePosition()
+        freestuff.endLocation = getMousePosition()
 
-        pickle.dump(freestuffs, file=open('freestuffs.p', 'wb'))
-    
-    return freestuffs
+        pickle.dump(freestuff, file=open(f'freestuff_{screenWidth}x{screenHeight}.p', 'wb'))
+
+    return freestuff
 
 
 def setupCardsConfigs():
     cards = CardsConfigs()
-    
+
     try:
-        cards = pickle.load(file=open('cards.p', 'rb'))
-        
+        cards = pickle.load(file=open(f'cards_{screenWidth}x{screenHeight}.p', 'rb'))
+
     except FileNotFoundError:
         input('Move your mouse to the Cards button and press enter')
         cards.openLocation = getMousePosition()
@@ -162,15 +209,17 @@ def setupCardsConfigs():
         input('Move your mouse to the Close button and press enter')
         cards.closeLocation = getMousePosition()
 
-        pickle.dump(cards, file=open('cards.p', 'wb'))
+        pickle.dump(cards, file=open(f'cards_{screenWidth}x{screenHeight}.p', 'wb'))
 
     return cards
 
+
 def setup():
     ui = setupUiConfigs()
-    freestuffs = setupFreestuffsConfigs()
+    freestuff = setupfreestuffConfigs()
     cards = setupCardsConfigs()
-    return ui, freestuffs, cards
+    return ui, freestuff, cards
+
 
 def getMousePosition():
     return pag.position()
@@ -178,9 +227,25 @@ def getMousePosition():
 
 def main():
     pag.FAILSAFE = True
-    ui, freestuffs, cards = setup()
-    gameLoop(ui, cards, freestuffs)
+    # parse args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--prestige', help='prestige only', required=False, default=False, action='store_true')
+    parser.add_argument('-b', '--buy', help='buy only', required=False, default=False, action='store_true')
+    arguments = parser.parse_args()
+    
+    #switch on arguments
+    if(arguments.prestige):
+        prestigeLoop()
+    elif(arguments.buy):
+        buyLoop()
+    else:
+        gameLoop()
+
+
+
+    
 
 
 if __name__ == '__main__':
+    ui, freestuff, cards = setup()
     main()
