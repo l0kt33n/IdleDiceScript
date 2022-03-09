@@ -6,6 +6,7 @@ import argparse
 
 convertTime = None
 fullDeck = False
+prestigeCountdown = 0
 screenWidth, screenHeight = pag.size()
 
 
@@ -96,17 +97,14 @@ def switchMode():
 
 
 def checkFreeStuff():
-    pag.click(cards.closeLocation)
-    sleep(0.5)
     while ImageGrab.grab().getpixel((freestuff.activationLocation)) == (255, 255, 255):
         getFreeStuff()
         sleep(1)
-    pag.click(cards.openLocation)
 
 
 def getFreeStuff():
     pag.click(freestuff.activationLocation)
-    sleep(0.5)
+    sleep(1)
     confirm(freestuff.startLocation)
     sleep(6)
     confirm(freestuff.endLocation)
@@ -120,17 +118,38 @@ def buyLoop():
 
 def prestigeLoop():
     time = 0
+    prestigeCountdown = -1
+    input('Move your mouse to L1 and press enter')
+    l1 = getMousePosition()
+    input('Move your mouse to L2 and press enter')
+    l2 = getMousePosition()
+    lastPrestigeTime = -1
+    prestigeWaitTime=600
     while True:
-        if time % freestuff.freeStuffInterVal == 0:
-            checkFreeStuff()
         if time % 60 == 0:
-            colors = ImageGrab.grab().crop((1567, 955, 1715, 980)).getcolors(maxcolors=512)
+            getFreeStuff()
+        if time % 5 == 0:
+        	switchMode()
+        if prestigeCountdown == 0:
+        	prestige()
+        	lastPrestigeTime = time
+        	prestigeCountdown = -1
+        if time - lastPrestigeTime > prestigeWaitTime and prestigeCountdown <= 0:
+        	prestige()
+        	lastPrestigeTime = time
+        	prestigeCountdown = -1
+        	prestigeWaitTime+=30
+        if time % 10 == 0 and prestigeCountdown <= 0 and time-lastPrestigeTime >5:
+            colors = ImageGrab.grab().crop((l1[0], l1[1], l2[0], l2[1])).getcolors(maxcolors=1024)
             for count, (r, g, b) in colors:
-                if (r,g,b) == (103,135,58):
-                    print('Prestige is green')   
-                    sleep(ui.prestigeWaitTime)
-                    prestige()
+                #if (r,g,b) == (103,135,58):
+                if g>r and g>b:
+                    print(f'Prestige detected:{r},{r},{b}')
+                    prestigeCountdown = ui.prestigeWaitTime
                     break
+        if prestigeCountdown > 0:
+            prestigeCountdown -= 1
+            print(prestigeCountdown)
         buyallAndRoll()
         time += 1
         sleep(1)
@@ -145,7 +164,7 @@ def gameLoop():
     try:
         while not fullDeck:
             if time % freestuff.freeStuffInterVal == 0:
-                checkFreeStuff()
+                getFreeStuff()
             if time % 5 == 0:
                 switchMode()
             buyallAndRoll()
