@@ -1,4 +1,4 @@
-from PIL import ImageGrab
+import pyscreenshot as ImageGrab
 from time import sleep, time
 import pyautogui as pag
 import pickle
@@ -17,6 +17,8 @@ class UiConfigs():
         self.buyMaxLocation = (1869, 66)
         self.buyMaxMode = False
         self.prestigeWaitTime = 120
+        self.presL1Location = (1250, 671)
+        self.presL2Location = (1250, 671)
 
 
 class FreeStuffConfigs():
@@ -106,8 +108,9 @@ def getFreeStuff():
     pag.click(freestuff.activationLocation)
     sleep(1)
     confirm(freestuff.startLocation)
-    sleep(6)
+    sleep(1)
     confirm(freestuff.endLocation)
+
 
 def buyLoop():
     time = 0
@@ -116,35 +119,31 @@ def buyLoop():
         time += 1
         sleep(1)
 
+
 def prestigeLoop():
     time = 0
     prestigeCountdown = -1
-    input('Move your mouse to L1 and press enter')
-    l1 = getMousePosition()
-    input('Move your mouse to L2 and press enter')
-    l2 = getMousePosition()
     lastPrestigeTime = -1
-    prestigeWaitTime=600
+    prestigeWaitTime = 600
     while True:
         if time % 60 == 0:
             getFreeStuff()
         if time % 5 == 0:
-        	switchMode()
+            switchMode()
         if prestigeCountdown == 0:
-        	prestige()
-        	lastPrestigeTime = time
-        	prestigeCountdown = -1
+            prestige()
+            lastPrestigeTime = time
+            prestigeCountdown = -1
         if time - lastPrestigeTime > prestigeWaitTime and prestigeCountdown <= 0:
-        	prestige()
-        	lastPrestigeTime = time
-        	prestigeCountdown = -1
-        	prestigeWaitTime+=30
-        if time % 10 == 0 and prestigeCountdown <= 0 and time-lastPrestigeTime >5:
-            colors = ImageGrab.grab().crop((l1[0], l1[1], l2[0], l2[1])).getcolors(maxcolors=1024)
+            prestige()
+            lastPrestigeTime = time
+            prestigeCountdown = -1
+            prestigeWaitTime += 30
+        if time % 10 == 0 and prestigeCountdown <= 0 and time-lastPrestigeTime > 5:
+            colors = ImageGrab.grab().crop(
+                (ui.presL1Location[0], ui.presL1Location[1], ui.presL2Location[0], ui.presL1Location[1])).getcolors(maxcolors=1024)
             for count, (r, g, b) in colors:
-                #if (r,g,b) == (103,135,58):
-                if g>r and g>b:
-                    print(f'Prestige detected:{r},{r},{b}')
+                if g > r and g > b:
                     prestigeCountdown = ui.prestigeWaitTime
                     break
         if prestigeCountdown > 0:
@@ -188,6 +187,10 @@ def setupUiConfigs():
         uiConfigs.buyOneLocation = getMousePosition()
         input('Move your mouse to the Buy Max button and press enter')
         uiConfigs.buyMaxLocation = getMousePosition()
+        input('Move your mouse to the Prestige button top left and press enter')
+        uiConfigs.presL1Location = getMousePosition()
+        input('Move your mouse to the Prestige button bottom right and press enter')
+        uiConfigs.presL2Location = getMousePosition()
 
         pickle.dump(uiConfigs, file=open(f'uiConfigs_{screenWidth}x{screenHeight}.p', 'wb'))
 
@@ -248,21 +251,19 @@ def main():
     pag.FAILSAFE = True
     # parse args
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--prestige', help='prestige only', required=False, default=False, action='store_true')
-    parser.add_argument('-b', '--buy', help='buy only', required=False, default=False, action='store_true')
+    parser.add_argument('-p', '--prestige', help='prestige only',
+                        required=False, default=False, action='store_true')
+    parser.add_argument('-b', '--buy', help='buy only',
+                        required=False, default=False, action='store_true')
     arguments = parser.parse_args()
-    
-    #switch on arguments
+
+    # switch on arguments
     if(arguments.prestige):
         prestigeLoop()
     elif(arguments.buy):
         buyLoop()
     else:
         gameLoop()
-
-
-
-    
 
 
 if __name__ == '__main__':
