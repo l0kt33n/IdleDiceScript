@@ -125,6 +125,7 @@ def prestigeLoop():
     prestigeCountdown = -1
     lastPrestigeTime = -1
     prestigeWaitTime = 600
+    rampupTime = -1
     while True:
         if time % 60 == 0:
             getFreeStuff()
@@ -135,16 +136,18 @@ def prestigeLoop():
             lastPrestigeTime = time
             prestigeCountdown = -1
         if time - lastPrestigeTime > prestigeWaitTime and prestigeCountdown <= 0:
+            print(f"Prestige time is up. Waiting {prestigeWaitTime} seconds before next prestige")
             prestige()
             lastPrestigeTime = time
             prestigeCountdown = -1
             prestigeWaitTime += 30
         if time % 10 == 0 and prestigeCountdown <= 0 and time-lastPrestigeTime > 5:
             colors = ImageGrab.grab().crop(
-                (ui.presL1Location[0], ui.presL1Location[1], ui.presL2Location[0], ui.presL1Location[1])).getcolors(maxcolors=1024)
+                (ui.presL1Location[0], ui.presL1Location[1], ui.presL2Location[0], ui.presL2Location[1])).getcolors(maxcolors=1024)
             for count, (r, g, b) in colors:
                 if g > r and g > b:
-                    prestigeCountdown = ui.prestigeWaitTime
+                    rampupTime = time - lastPrestigeTime
+                    prestigeCountdown = round(rampupTime * 1.5)
                     break
         if prestigeCountdown > 0:
             prestigeCountdown -= 1
