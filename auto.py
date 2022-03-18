@@ -115,6 +115,8 @@ def getFreeStuff():
 def buyLoop():
     time = 0
     while True:
+        if time % 60 == 0:
+            getFreeStuff()
         buyallAndRoll()
         time += 1
         sleep(1)
@@ -124,13 +126,13 @@ def prestigeLoop():
     time = 0
     prestigeCountdown = -1
     lastPrestigeTime = -1
-    prestigeWaitTime = 600
+    prestigeWaitTime = 3600
     rampupTime = -1
     while True:
         if time % 60 == 0:
             getFreeStuff()
-        if time % 5 == 0:
-            switchMode()
+        #if time % 5 == 0:
+            #switchMode()
         if prestigeCountdown == 0:
             prestige()
             lastPrestigeTime = time
@@ -140,7 +142,7 @@ def prestigeLoop():
             prestige()
             lastPrestigeTime = time
             prestigeCountdown = -1
-            prestigeWaitTime += 30
+            prestigeWaitTime += 300
         if time % 10 == 0 and prestigeCountdown <= 0 and time-lastPrestigeTime > 5:
             colors = ImageGrab.grab().crop(
                 (ui.presL1Location[0], ui.presL1Location[1], ui.presL2Location[0], ui.presL2Location[1])).getcolors(maxcolors=1024)
@@ -151,8 +153,8 @@ def prestigeLoop():
                     break
         if prestigeCountdown > 0:
             prestigeCountdown -= 1
-            print(prestigeCountdown)
-        buyallAndRoll()
+            print(prestigeCountdown, end='\r', flush=True)
+        #buyallAndRoll()
         time += 1
         sleep(1)
 
